@@ -1,0 +1,8 @@
+# 最小 Conda 启动环境；项目的 Python 包依赖仍由 uv/pip 根据 pyproject 管理。
+name: enterprise-agent
+channels:
+  # 使用默认渠道获取 Python 解释器与 pip。
+  - defaults
+dependencies:
+  - python=3.12
+  - pip

@@ -1,0 +1,57 @@
+/* Actual browser upload -> background parse -> ask -> preview -> replace/delete. */
+const assert=require('node:assert/strict');
+const fs=require('node:fs');
+const os=require('node:os');
+const path=require('node:path');
+const {spawn}=require('node:child_process');
+const {chromium}=require('playwright');
+const root=path.resolve(__dirname,'..');
+const python=process.env.EA_PYTHON||path.join(root,'.venv',process.platform==='win32'?'Scripts/python.exe':'bin/python');
+const port=process.env.EA_KNOWLEDGE_BROWSER_PORT||'18029';
+const origin=`http://127.0.0.1:${port}`;
+const temporary=fs.mkdtempSync(path.join(os.tmpdir(),'ea-knowledge-browser-'));
+const output=path.join(root,'artifacts','ui');fs.mkdirSync(output,{recursive:true});
+const server=spawn(python,['-B','-m','enterprise_agent.cli.serve','--mode','demo','--port',port,'--knowledge-dir',temporary],{cwd:root,windowsHide:true,stdio:['ignore','pipe','pipe'],env:{...process.env,AGENT_KNOWLEDGE_MODEL_ENABLED:'0'}});
+let logs='',browser;server.stdout.on('data',x=>logs+=x);server.stderr.on('data',x=>logs+=x);
+async function ready(){for(let i=0;i<100;i++){if(server.exitCode!==null)throw new Error(logs);try{if((await fetch(origin+'/api/config')).ok)return;}catch{}await new Promise(r=>setTimeout(r,100));}throw new Error('Startup timeout');}
+(async()=>{
+  await ready();browser=await chromium.launch({headless:true,channel:process.env.EA_BROWSER_CHANNEL||undefined});
+  const context=await browser.newContext({viewport:{width:1440,height:1100}});const page=await context.newPage();
+  const errors=[];page.on('pageerror',e=>errors.push(e.message));
+  await page.goto(origin);await page.waitForFunction(()=>document.getElementById('knowledge-hint').textContent.includes('Cookie'));
+  await page.locator('#knowledge-nav').click();await page.locator('#library-name').fill('我的项目资料');await page.locator('#library-create').click();
+  await page.waitForSelector('#document-workspace:not([hidden])');
+  assert.notEqual(await page.locator('#knowledge-source').inputValue(),'');
+  await page.locator('#file-upload').setInputFiles({name:'Orchid归档.txt',mimeType:'text/plain',buffer:Buffer.from('Orchid 项目归档规则：负责人是陈老师，预算为 4721 元。\n<script>window.knowledgeInjected=true</script>')});
+  await page.waitForFunction(()=>document.getElementById('document-list').textContent.includes('可用'),{},{timeout:20000});
+  await page.locator('#question').fill('Orchid 归档预算是多少');await page.locator('#submit').click();
+  await page.waitForSelector('#results:not([hidden])');assert.match(await page.locator('#answer').innerText(),/4721/);
+  assert.match(await page.locator('#outcome').innerText(),/本地摘录/);assert.equal(await page.evaluate(()=>window.knowledgeInjected),undefined);
+  assert.equal(await page.locator('#answer script').count(),0);
+  await page.locator('.evidence-card button').first().click();await page.waitForSelector('#document-preview[open]');
+  assert.match(await page.locator('#preview-chunks').innerText(),/4721/);assert.match(await page.locator('#preview-chunks').innerText(),/第 1/);
+  await page.locator('#document-preview form button').click();
+  await page.evaluate(()=>window.scrollTo(0,0));await page.screenshot({path:path.join(output,'knowledge-desktop.png'),fullPage:true});
+  await page.setViewportSize({width:390,height:844});await page.screenshot({path:path.join(output,'knowledge-mobile.png'),fullPage:true});
+  assert.ok(await page.evaluate(()=>document.documentElement.scrollWidth<=window.innerWidth),'mobile overflow');
+  // Browser reload retains session and library, but does not silently enable model.
+  await page.reload();await page.waitForSelector('#library-list button',{state:'attached'});assert.equal(await page.locator('#knowledge-model').isChecked(),false);
+  await page.locator('#knowledge-nav').click();await page.locator('#library-list button').first().click();
+  await page.waitForSelector('.document-row');
+  const chooserPromise=page.waitForEvent('filechooser');await page.getByRole('button',{name:'替换文件',exact:true}).click();
+  await (await chooserPromise).setFiles({name:'Orchid归档.txt',mimeType:'text/plain',buffer:Buffer.from('Orchid 项目新预算为 9832 元，原预算已经废止。')});
+  await page.waitForFunction(()=>document.getElementById('document-list').textContent.includes('版本 2')&&document.getElementById('document-list').textContent.includes('可用'),{},{timeout:20000});
+  await page.locator('#question').fill('Orchid 预算');await page.locator('#submit').click();await page.waitForSelector('#results:not([hidden])');
+  assert.match(await page.locator('#answer').innerText(),/9832/);assert.doesNotMatch(await page.locator('#answer').innerText(),/4721/);
+  page.on('dialog',dialog=>dialog.accept());await page.getByRole('button',{name:'删除',exact:true}).click();
+  await page.waitForFunction(()=>document.getElementById('document-list').textContent.includes('暂无文件'));
+  await page.locator('#submit').click();await page.waitForSelector('#results:not([hidden])');assert.equal(await page.locator('.evidence-card').count(),0);
+  await page.locator('#file-upload').setInputFiles({name:'broken.pdf',mimeType:'application/pdf',buffer:Buffer.from('invalid PDF')});
+  await page.waitForFunction(()=>document.getElementById('document-list').textContent.includes('失败'),{},{timeout:20000});
+  await page.getByRole('button',{name:'重试',exact:true}).click();
+  await page.waitForFunction(()=>document.getElementById('document-list').textContent.includes('版本 2')&&document.getElementById('document-list').textContent.includes('失败'),{},{timeout:20000});
+  const privateContext=await browser.newContext();const outsider=await privateContext.newPage();await outsider.goto(origin);
+  await outsider.waitForFunction(()=>document.getElementById('knowledge-hint').textContent.includes('Cookie'));
+  assert.equal(await outsider.locator('#library-list button').count(),0);await privateContext.close();
+  assert.deepEqual(errors,[]);console.log('Knowledge browser passed: upload, parse, scope, citations, preview, persistence, replacement, deletion, retry, isolation, mobile, literal HTML.');
+})().catch(e=>{console.error(e);process.exitCode=1;}).finally(async()=>{if(browser)await browser.close();server.kill();console.log('Disposable test data (not user data): '+temporary);});

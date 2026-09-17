@@ -1,0 +1,24 @@
+services:
+  workspace:
+    build: .
+    command: ["enterprise-agent-serve", "--mode", "workspace", "--host", "0.0.0.0", "--port", "8000", "--identity-file", "/run/agent/workspace-identities.json"]
+    ports:
+      - "127.0.0.1:${AGENT_WORKSPACE_PORT:-8011}:8000"
+    volumes:
+      - workspace-knowledge:/data/knowledge
+      - type: bind
+        source: ./.local/workspace-identities.json
+        target: /run/agent/workspace-identities.json
+        read_only: true
+        bind:
+          create_host_path: false
+    read_only: true
+    tmpfs:
+      - /tmp
+    security_opt:
+      - no-new-privileges:true
+    cap_drop:
+      - ALL
+    restart: unless-stopped
+volumes:
+  workspace-knowledge:

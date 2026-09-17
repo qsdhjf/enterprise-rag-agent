@@ -1,0 +1,25 @@
+{
+  "name": "Personal upload retrieval teaching fixture",
+  "provenance": "Original synthetic examples authored for this repository; manually assigned document-level relevance, not independent production annotations.",
+  "synthetic": true,
+  "documents": [
+    {"id":"travel","name":"差旅制度.txt","text":"员工异地出差的住宿报销上限为每晚 480 元。报销申请需在返程后 15 天内提交。国际差旅需单独审批。"},
+    {"id":"leave","name":"休假流程.md","text":"员工申请年假需要直属主管批准，至少提前三个工作日提交。病假需附医院证明。"},
+    {"id":"orchid","name":"Orchid 项目.txt","text":"Orchid 项目负责人是林悦，验收日期为 2026 年 10 月 12 日。验收必须完成离线回归测试。"},
+    {"id":"archive","name":"项目归档.txt","text":"项目归档时应将源代码打包并保存 SHA-256 校验值，归档后保留只读权限。负责人审批归档清单。"},
+    {"id":"support","name":"故障支持.txt","text":"工作日生产故障由值班工程师响应，响应目标为 20 分钟。演示环境不承诺服务级别。"},
+    {"id":"security","name":"访问策略.txt","text":"外部协作者只能读取被授权的项目资料。访问令牌不得上传公开仓库，离职时应撤销账户与令牌。"}
+  ],
+  "cases": [
+    {"case_id":"travel-limit","query":"差旅住宿报销上限多少？","relevant_document_ids":["travel"],"expected_facts":["每晚 480 元"]},
+    {"case_id":"travel-deadline","query":"出差返程后多久提交报销？","relevant_document_ids":["travel"],"expected_facts":["返程后 15 天内"]},
+    {"case_id":"leave-approval","query":"年假谁批准，提前几天？","relevant_document_ids":["leave"],"expected_facts":["直属主管批准","提前三个工作日"]},
+    {"case_id":"owner","query":"Orchid 项目负责人是谁？","relevant_document_ids":["orchid"],"expected_facts":["林悦"]},
+    {"case_id":"archive","query":"项目归档怎么保存代码？","relevant_document_ids":["archive"],"expected_facts":["打包并保存 SHA-256 校验值"]},
+    {"case_id":"semantic-paraphrase","query":"旅馆一宿最多能花多少？","relevant_document_ids":["travel"],"expected_facts":["每晚 480 元"]},
+    {"case_id":"multi-doc","query":"Orchid 验收后归档要做什么？","relevant_document_ids":["orchid","archive"],"expected_facts":["离线回归测试","打包与 SHA-256 校验","归档只读"]},
+    {"case_id":"support","query":"生产故障响应目标多久？","relevant_document_ids":["support"],"expected_facts":["20 分钟"]},
+    {"case_id":"unknown-budget","query":"Orchid 项目预算多少钱？","relevant_document_ids":[],"expected_facts":["没有项目预算证据，不能用差旅报销上限代替"]},
+    {"case_id":"unknown-cafeteria","query":"食堂菜单有哪些？","relevant_document_ids":[],"expected_facts":["资料不含食堂菜单"]}
+  ]
+}

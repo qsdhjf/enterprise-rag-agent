@@ -1,0 +1,89 @@
+name: Verify
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+  workflow_dispatch:
+permissions:
+  contents: read
+jobs:
+  unit-and-package:
+    strategy:
+      matrix:
+        os: [ubuntu-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: '0.12.2'
+      - run: uv sync --locked
+      - run: uv run pytest -q
+      - run: uv run enterprise-agent-doctor --mode demo
+      - run: uv run enterprise-agent-eval --mode demo --output artifacts/demo-eval.json
+      - run: uv run enterprise-agent-eval-knowledge --output artifacts/knowledge-eval.json
+      - run: uv build
+      - run: uv run python scripts/verify_wheel.py dist
+      - run: uv run python scripts/verify_release.py --output artifacts/enterprise-agent-source.zip
+      - uses: actions/upload-artifact@v4
+        with:
+          name: release-check-${{ matrix.os }}
+          path: |
+            artifacts/demo-eval.json
+            artifacts/knowledge-eval.json
+            artifacts/enterprise-agent-source.zip
+            dist/*
+  opensearch:
+    runs-on: ubuntu-latest
+    services:
+      search:
+        image: opensearchproject/opensearch:3.7.0
+        env:
+          discovery.type: single-node
+          DISABLE_INSTALL_DEMO_CONFIG: 'true'
+          DISABLE_SECURITY_PLUGIN: 'true'
+          OPENSEARCH_JAVA_OPTS: '-Xms512m -Xmx512m'
+        ports:
+          - 9200:9200
+        options: >-
+          --health-cmd "curl -fsS http://localhost:9200/_cluster/health"
+          --health-interval 10s --health-timeout 5s --health-retries 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: '0.12.2'
+      - run: uv sync --locked
+      - run: uv run pytest tests/test_opensearch_integration.py -q
+        env:
+          EA_TEST_OPENSEARCH_URL: http://127.0.0.1:9200
+  browser:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '22'
+      - uses: astral-sh/setup-uv@v6
+        with:
+          version: '0.12.2'
+      - run: uv sync --locked
+      - run: npm ci
+      - run: npx playwright install --with-deps chromium
+      - run: npm run test:browser
+        env:
+          EA_PYTHON: .venv/bin/python
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: browser-screenshots
+          path: artifacts/ui/*.png

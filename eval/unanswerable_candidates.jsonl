@@ -1,0 +1,6 @@
+{"case_id":"negative_jira_incident_001","query":"What was the root cause and final resolution of Jira incident INC-999999 involving Oracle RAC block corruption?","source":"jira"}
+{"case_id":"negative_hr_shanghai_002","query":"公司2027年上海办公室春节放假安排和食堂营业时间是什么？","source":null}
+{"case_id":"negative_confluence_pg_key_003","query":"What is the approved zero-downtime rollback procedure for rotating production PostgreSQL encryption keys?","source":"confluence"}
+{"case_id":"negative_customer_tls_004","query":"Which customer approved production launch of post-quantum TLS 1.4 in the Mars region?","source":null}
+{"case_id":"negative_slack_gpu_detail_005","query":"Who approved moving the H100 reservation from us-west1 to africa-south1, and what was the newly approved monthly price?","source":"slack"}
+{"case_id":"negative_jira_lifecycle_detail_006","query":"What exact production deployment date and approved change-ticket ID were assigned to the project lifecycle archival automation?","source":"jira"}

@@ -1,0 +1,50 @@
+# 项目元数据与运行时依赖；版本范围用于兼顾可复现性和兼容更新。
+[project]
+name = "enterprise-agent"
+version = "0.5.0"
+description = "Evidence-first enterprise RAG agent with tenant-aware retrieval and an inspectable workspace"
+license = "MIT"
+license-files = ["LICENSE", "NOTICE"]
+keywords = ["rag", "agents", "enterprise-search", "langgraph", "opensearch"]
+readme = "README.md"
+requires-python = ">=3.12"
+dependencies = [
+    "fastapi>=0.141.1",
+    "httpx>=0.28,<1",
+    "langgraph>=1,<2",
+    "openai>=2.53.0,<3",
+    "opensearch-py>=3.2.0",
+    "pydantic>=2,<3",
+    "python-dotenv>=1.2.2",
+    "pypdf>=6.19,<7",
+    "defusedxml>=0.7.1,<1",
+    "psutil>=7,<8",
+    "uvicorn[standard]>=0.52.1",
+]
+
+# 安装项目后生成的命令行入口：左侧是命令名，右侧是 Python 调用目标。
+[project.scripts]
+enterprise-agent = "enterprise_agent.cli.data_pipeline:main"
+enterprise-agent-run = "enterprise_agent.cli.agent:main"
+enterprise-agent-search = "enterprise_agent.cli.enterprise_search:main"
+enterprise-agent-index = "enterprise_agent.cli.hybrid_index:main"
+enterprise-agent-ingest = "enterprise_agent.cli.hybrid_ingest:main"
+enterprise-agent-serve = "enterprise_agent.cli.serve:main"
+enterprise-agent-eval = "enterprise_agent.cli.evaluate:main"
+enterprise-agent-eval-knowledge = "enterprise_agent.cli.evaluate_knowledge:main"
+enterprise-agent-connect = "enterprise_agent.cli.connect:main"
+enterprise-agent-snapshot = "enterprise_agent.cli.snapshot:main"
+enterprise-agent-identity = "enterprise_agent.cli.identity:main"
+enterprise-agent-doctor = "enterprise_agent.cli.doctor:main"
+enterprise-agent-knowledge-backup = "enterprise_agent.cli.knowledge_backup:main"
+
+# uv_build 将 src 布局中的 enterprise_agent 打包为可安装项目。
+[build-system]
+requires = ["uv_build>=0.12.2,<0.13.0"]
+build-backend = "uv_build"
+
+# 测试工具只属于开发环境，不会被安装进生产镜像。
+[dependency-groups]
+dev = [
+    "pytest>=9.1.1",
+]

@@ -1,0 +1,32 @@
+# Python 解释器与打包工具生成的临时文件。
+__pycache__/
+*.py[oc]
+build/
+dist/
+wheels/
+*.egg-info
+
+# 本地虚拟环境不提交到版本库。
+.venv
+
+# 本地密钥与环境变量文件；仅保留不含真实密钥的示例。
+.env
+.env.*
+!.env.example
+
+# Private identities, imported data, release output and test reports.
+.local/
+artifacts/
+.pytest_cache/
+.ruff_cache/
+*.log
+identities*.json
+!identities.example.json
+playwright-report/
+test-results/
+node_modules/
+*.sqlite
+*.sqlite3
+*.sqlite3-wal
+*.sqlite3-shm
+provider-settings.private.json

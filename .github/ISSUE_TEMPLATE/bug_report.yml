@@ -1,0 +1,25 @@
+name: Bug report
+description: A reproducible problem with retrieval, evidence, setup or access control
+body:
+  - type: markdown
+    attributes:
+      value: 'Never paste credentials, private documents or confidential prompts. Report exploitable security issues privately via SECURITY.md.'
+  - type: textarea
+    id: environment
+    attributes:
+      label: Environment
+      description: Version, OS, Python, demo/live mode; sanitized doctor output
+    validations:
+      required: true
+  - type: textarea
+    id: reproduce
+    attributes:
+      label: Minimal reproduction and expected behavior
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual behavior and sanitized request ID / logs
+    validations:
+      required: true

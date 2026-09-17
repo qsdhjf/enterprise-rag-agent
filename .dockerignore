@@ -1,0 +1,34 @@
+# 版本控制元数据对镜像构建无用。
+.git
+.gitignore
+
+# 本地环境、缓存和 Python 构建产物不进入构建上下文。
+.venv
+__pycache__/
+*.py[cod]
+.pytest_cache/
+build/
+dist/
+wheels/
+*.egg-info/
+
+# 排除真实密钥，只允许示例配置进入上下文。
+.env
+.env.*
+!.env.example
+.local/
+identities*.json
+provider-settings.private.json
+*.sqlite3
+*.sqlite3-wal
+*.sqlite3-shm
+*.log
+node_modules/
+
+# 运行产物、评测数据、测试和本地脚本都不是生产 API 镜像所需内容。
+artifacts/
+eval/
+tests/
+scripts/
+infra/
+问题.txt

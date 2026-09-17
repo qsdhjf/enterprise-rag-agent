@@ -1,0 +1,6 @@
+{"case_id":"archive-zh","query":"Atlas 项目归档","relevant_document_ids":["confluence::archive-policy","jira::archive-ticket","slack::archive-chat"]}
+{"case_id":"rollback-en","query":"release rollback image database","relevant_document_ids":["github::release-code"]}
+{"case_id":"onboarding-zh","query":"新员工入职 多因素认证 权限","relevant_document_ids":["google_drive::onboarding-guide"]}
+{"case_id":"handover-en","query":"handover incident drill alerts","relevant_document_ids":["fireflies::handover-meeting"]}
+{"case_id":"customer-zh","query":"客户交付 验收 培训","relevant_document_ids":["hubspot::customer-handoff"]}
+{"case_id":"unknown","query":"xylophoniumquasar","relevant_document_ids":[]}

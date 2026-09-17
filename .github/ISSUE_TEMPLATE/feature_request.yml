@@ -1,0 +1,19 @@
+name: Feature request
+description: Start with a user problem and a testable outcome
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Who is blocked, and what are they trying to do?
+    validations:
+      required: true
+  - type: textarea
+    id: acceptance
+    attributes:
+      label: Smallest useful change and how to verify it
+    validations:
+      required: true
+  - type: textarea
+    id: scope
+    attributes:
+      label: Alternatives, permission boundaries and data/privacy implications

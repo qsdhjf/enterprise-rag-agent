@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+  <meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+  <meta name="description" content="Evidence-first enterprise RAG. Ask, inspect sources, and see what is still unknown.">
+  <title>Enterprise Agent · 证据工作台</title>
+  <link rel="stylesheet" href="/static/style.css"><link rel="stylesheet" href="/static/knowledge.css"><script src="/static/app.js" defer></script><script src="/static/knowledge.js" defer></script><script src="/static/setup.js" defer></script>
+</head>
+<body>
+  <aside class="sidebar">
+    <a class="brand" href="/" aria-label="Enterprise Agent home"><span class="mark">e.</span><span>enterprise<br><strong>agent</strong></span></a>
+    <div class="workspace-label">WORKSPACE / 工作空间</div>
+    <div class="nav-active"><span>⌕</span> 证据调查</div>
+    <a class="nav-link" href="#knowledge-panel" id="knowledge-nav">▤ 我的知识库</a>
+    <a class="nav-link" href="/docs" target="_blank" rel="noopener">↗ API 文档</a>
+    <div class="sidebar-note"><span class="small-dot"></span> READ-ONLY BY DESIGN<p>先寻找证据，再给出结论。<br>不知道，也是一种可靠回答。</p></div>
+    <div class="sidebar-footer">OPEN SOURCE · v0.5.0</div>
+  </aside>
+  <main>
+    <header><span>知识工作台 <span class="slash">/</span> 新调查</span><span id="mode" class="badge">正在连接…</span></header>
+    <section class="intro"><div class="eyebrow">ANSWERS WITH A PAPER TRAIL</div><h1>从一个问题，<br>走到一组可信证据<span>。</span></h1><p>跨来源检索，逐条查看原文。让答案的依据、边界和缺口清晰可见。</p></section>
+    <section id="mode-notice" class="notice" aria-live="polite">正在读取运行模式…</section>
+    <div id="credentials" hidden><label for="token">服务访问令牌</label><input id="token" type="password" autocomplete="off" placeholder="仅保存在当前页面内存，不存入浏览器"><small>由部署管理员提供；公网部署必须使用 HTTPS。</small><button type="button" id="knowledge-connect" class="secondary">连接我的知识库</button></div>
+    <details id="setup-panel" class="knowledge-panel" hidden>
+      <summary><span>⚙ 首次使用 · 模型配置</span><small>① 保存配置 → ② 测试连接 → ③ 上传并提问</small></summary>
+      <p class="knowledge-hint">本地原文检索可直接使用，无需配置。完整 Agent 需要对话模型；混合检索还需向量模型，重排需 TEI 服务。配置保存在本机私有文件，未加密，不应提交 Git。保存不会调用模型。</p>
+      <form id="provider-form" class="provider-grid">
+        <label>用途<select id="provider-kind"><option value="llm">对话模型（OpenAI 兼容）</option><option value="embedding">向量模型（OpenAI 兼容）</option><option value="reranker">重排服务（Hugging Face TEI）</option></select></label>
+        <label>服务地址<input id="provider-url" type="url" required placeholder="https://your-provider.example/v1" autocomplete="off"></label>
+        <label>模型名称<input id="provider-model" required maxlength="150" placeholder="服务实际部署的模型 ID" autocomplete="off"></label>
+        <label>API Key<input id="provider-key" type="password" autocomplete="new-password" placeholder="留空保留同地址旧密钥；本机无鉴权模型可空"></label>
+        <label id="dimension-field" hidden>向量维度<input id="provider-dimensions" type="number" min="1" max="4096" value="1024"></label>
+        <div class="document-actions"><button type="submit" id="provider-save">保存配置</button><button type="button" id="provider-test" class="secondary">测试已保存配置</button><button type="button" id="provider-remove" class="secondary danger">移除此用途配置</button></div>
+      </form>
+      <p id="provider-status" role="status" aria-live="polite"></p>
+      <p class="knowledge-hint">测试只发送固定测试文本，可能计费。向量维度必须与服务实际输出一致。连接成功不代表回答质量合格。远程部署请由管理员在服务器本机配置，不要将本向导暴露到公网。</p>
+    </details>
+    <details id="knowledge-panel" class="knowledge-panel">
+      <summary><span>▤ 我的知识库</span><small>上传资料 · 查看处理进度 · 核对原文</small></summary>
+      <p class="knowledge-hint" id="knowledge-hint">正在连接知识库…</p>
+      <p class="knowledge-hint" id="storage-usage" aria-live="polite"></p>
+      <div id="knowledge-error" role="alert" hidden></div>
+      <div class="library-toolbar"><label for="library-name" class="sr-only">新知识库名称</label><input id="library-name" maxlength="80" placeholder="例如：课题组项目资料"><button id="library-create" type="button">创建知识库</button></div>
+      <div id="library-list" class="library-list" aria-label="知识库列表"></div>
+      <div id="document-workspace" hidden>
+        <div class="document-heading"><h3 id="library-title"></h3><button id="library-delete" type="button" class="secondary danger">删除此知识库</button></div>
+        <label class="drop-zone" id="drop-zone" for="file-upload"><strong>选择文件或拖到这里</strong><span>TXT / MD / 文本型 PDF / DOCX · 每份 ≤ 8 MiB · 扫描件须先 OCR</span><input id="file-upload" type="file" accept=".txt,.md,.pdf,.docx" multiple></label>
+        <p id="upload-status" role="status" aria-live="polite"></p>
+        <div class="document-heading"><small>仅“可用”的文档参与检索；替换时旧版本立即停止参与检索。</small><button id="documents-refresh" class="secondary" type="button">刷新状态</button></div>
+        <div id="document-list" class="document-list"></div>
+        <div class="index-panel"><h4>可选：语义索引</h4><p id="index-status" role="status">尚未检查</p><p id="index-plan" role="status"></p><label><input type="checkbox" id="index-force">强制全部重算（通常不需要；同名模型权重变化时可用）</label><div class="document-actions"><button type="button" id="index-build" class="secondary">预估并构建 / 继续索引</button><button type="button" id="index-refresh" class="secondary">刷新索引状态</button><button type="button" id="index-cancel" class="secondary">取消构建</button><button type="button" id="index-clear" class="secondary danger">清理语义索引</button></div><small>先展示本次需要发送的切块和字符量，确认后才调用。复用未变动文件及失败任务已保存的批次；不跨用户/知识库共享。文件增删改后需重新确认构建，最多 2000 块。清理索引不删除原文件，但重新生成仍可能计费。</small></div>
+      </div>
+    </details>
+    <form id="ask-form">
+      <div class="source-controls"><label for="knowledge-source">检索范围</label><select id="knowledge-source"><option value="">内置样例 / 企业索引</option></select><div id="model-choice" hidden><label><input id="knowledge-model" type="checkbox">使用模型回答（发送问题及相关原文给已配置供应商，可能计费）<small id="model-help"></small></label><div id="agent-choices" hidden><label>问答方式<select id="knowledge-answer-kind"><option value="agent">完整 Agent：规划 → 检索 → 审核 → 补充检索 → 回答</option><option value="model">简易问答：一次检索 + 回答（无独立审核）</option></select></label><label>检索策略<select id="knowledge-strategy"><option value="bm25">BM25 关键词（无需向量）</option><option value="hybrid">BM25 + 向量混合（需要语义索引）</option><option value="reranked">混合检索 + TEI 重排</option></select></label><small>混合检索将问题发给向量服务；重排还会发送候选原文。最多 3 次检索。模型审核仍需人工核对。</small></div></div></div>
+      <label for="question" class="sr-only">你的企业知识问题</label>
+      <textarea id="question" maxlength="2000" rows="3" placeholder="例如：Atlas 项目归档，需要哪些团队做什么？" required></textarea>
+      <div class="composer-footer"><span>只读调查 · 不执行企业系统写操作</span><button id="submit" type="submit">开始调查 <span>↗</span></button></div>
+    </form>
+    <div id="examples" class="examples" aria-label="示例问题"></div>
+    <div id="error" role="alert" hidden></div>
+    <section id="pending" hidden aria-live="polite"><span class="spinner"></span><span>正在检索并整理证据…</span><button id="cancel-ask" type="button" class="secondary">停止等待</button><small>停止等待不保证已发出的模型请求停止计费。</small></section>
+    <section id="results" hidden aria-live="polite">
+      <div class="result-heading"><h2>调查结果</h2><span id="outcome" class="badge"></span></div>
+      <div class="result-grid"><div><article class="panel answer-panel"><div class="panel-label">01 / ANSWER</div><h3>回答与边界</h3><div id="answer" class="answer"></div><div id="stats" class="stats"></div></article>
+      <article class="panel"><div class="panel-label">02 / ASSESSMENT</div><h3>事实审核 / 信息缺口</h3><div id="facts"></div></article>
+      <article class="panel"><div class="panel-label">03 / ACTIVITY</div><h3>检索记录</h3><div id="activity"></div><small>展示工具执行摘要，不展示模型内部思维过程。</small></article></div>
+      <aside class="evidence-column"><div class="evidence-title"><h3>原文证据</h3><span id="evidence-count"></span></div><div id="evidence"></div></aside></div>
+      <div class="result-footer"><span id="request-id"></span><button id="export" class="secondary" type="button">导出本次调查 JSON ↓</button></div>
+    </section>
+    <footer>BUILT FOR VERIFIABLE ANSWERS <span>证据不是装饰，而是答案的起点。</span></footer>
+  </main>
+  <dialog id="document-preview"><form method="dialog"><button class="secondary">关闭预览</button></form><h2 id="preview-title"></h2><p id="preview-description"></p><div id="preview-chunks"></div><button id="preview-more" class="secondary" type="button" hidden>加载后续切块</button></dialog>
+</body></html>

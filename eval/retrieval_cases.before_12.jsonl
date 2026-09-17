@@ -1,0 +1,4 @@
+{"case_id":"jira_lifecycle_001","query":"project lifecycle automation decommission Slack channels snapshot Confluence archive Jira projects","source":"jira","relevant_document_ids":["dsid_eab08bf08daa480cae4e2f511aadae12"]}
+{"case_id":"slack_gpu_cost_001","query":"GPU region placement reserved costs quota","source":"slack","relevant_document_ids":["dsid_207184bb522446f7b7307262d56b6940"]}
+{"case_id":"jira_lifecycle_zh_002","query":"项目结束后，怎样自动关闭协作频道、备份知识页面并归档工单？","source":"jira","relevant_document_ids":["dsid_eab08bf08daa480cae4e2f511aadae12"]}
+{"case_id":"slack_gpu_paraphrase_002","query":"Which geography offers the cheapest committed H100 capacity, and where are supply constraints most serious?","source":"slack","relevant_document_ids":["dsid_207184bb522446f7b7307262d56b6940"]}

@@ -1,0 +1,128 @@
+services:
+  # 对外提供 FastAPI 接口的应用容器。
+  api:
+    build:
+      context: ../..
+      dockerfile: Dockerfile
+    image: enterprise-agent:dev
+    command: ["enterprise-agent-serve", "--mode", "live", "--host", "0.0.0.0", "--port", "8000", "--identity-file", "/run/agent/identities.json"]
+    volumes:
+      - type: bind
+        source: ../../.local/identities.json
+        target: /run/agent/identities.json
+        read_only: true
+        bind:
+          create_host_path: false
+    container_name: enterprise-agent-api
+    env_file:
+      # 密钥和可变配置保存在项目根目录的 .env 中，不写入镜像。
+      - ../../.env
+    environment:
+      # 容器内通过 Compose 服务名连接 OpenSearch。
+      OPENSEARCH_URL: http://opensearch:9200
+      # 该特殊域名让 Linux 容器能够访问宿主机上的 Ollama。
+      EMBEDDING_BASE_URL: http://host.docker.internal:11434/v1
+      RERANKER_BASE_URL: http://reranker:80
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    depends_on:
+      # 等 OpenSearch 真正健康后再启动 API，而非仅等待容器进程出现。
+      opensearch:
+        condition: service_healthy
+      reranker:
+        condition: service_healthy
+    ports:
+      # 只绑定回环地址，默认不向局域网直接暴露开发服务。
+      - "127.0.0.1:8000:8000"
+    init: true
+    restart: unless-stopped
+
+  # GPU-backed cross-encoder reranker served as an independent HTTP service.
+  reranker:
+    image: ghcr.io/huggingface/text-embeddings-inference:120-1.9
+    container_name: enterprise-agent-reranker
+    command:
+      - --model-id
+      - BAAI/bge-reranker-v2-m3
+      - --revision
+      - 953dc6f6f85a1b2dbfca4c34a2796e7dde08d41e
+      - --dtype
+      - float16
+      - --max-client-batch-size
+      - "40"
+      - --max-concurrent-requests
+      - "40"
+      - --max-batch-requests
+      - "40"
+      - --max-batch-tokens
+      - "32768"
+      - --auto-truncate
+      - "true"
+      - --json-output
+    environment:
+      HUGGING_FACE_HUB_CACHE: /data
+    volumes:
+      - reranker-model-cache:/data
+    ports:
+      - "127.0.0.1:8081:80"
+    gpus: all
+    shm_size: "1gb"
+    init: true
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-fsS", "http://localhost:80/health"]
+      interval: 10s
+      timeout: 5s
+      retries: 60
+      start_period: 10m
+
+  # 单节点、关闭安全插件的本地开发 OpenSearch；不适合作为生产配置。
+  opensearch:
+    image: opensearchproject/opensearch:3.7.0
+    container_name: enterprise-agent-opensearch
+
+    environment:
+      # 单节点模式不执行生产集群发现。
+      - discovery.type=single-node
+      - cluster.name=enterprise-agent-local
+      - node.name=opensearch-node
+      - bootstrap.memory_lock=true
+      # 将 Java 堆固定为 1 GiB，避免开发机内存占用不受控。
+      - OPENSEARCH_JAVA_OPTS=-Xms1g -Xmx1g
+      # 本地环境关闭演示证书和鉴权，访问端口时无需用户名密码。
+      - DISABLE_INSTALL_DEMO_CONFIG=true
+      - DISABLE_SECURITY_PLUGIN=true
+
+    ulimits:
+      # OpenSearch 建议锁定内存并提高文件描述符上限。
+      memlock:
+        soft: -1
+        hard: -1
+      nofile:
+        soft: 65536
+        hard: 65536
+
+    volumes:
+      # 使用命名卷持久化索引，重建容器不会自动清空数据。
+      - opensearch-data:/usr/share/opensearch/data
+
+    ports:
+      # 9200 是 REST API；9600 用于性能分析插件。
+      - "127.0.0.1:9200:9200"
+      - "127.0.0.1:9600:9600"
+
+    restart: unless-stopped
+
+    healthcheck:
+      # 集群健康接口可用后，依赖它的 API 容器才会启动。
+      test: ["CMD-SHELL", "curl -fsS http://localhost:9200/_cluster/health || exit 1"]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+      start_period: 60s
+
+volumes:
+  # Compose 管理的持久化卷名称。
+  opensearch-data:
+  reranker-model-cache:
+    name: enterprise-agent-reranker-model-cache

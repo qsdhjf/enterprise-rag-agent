@@ -1,0 +1,17 @@
+Enterprise Agent
+
+This project was developed in a workspace containing EnterpriseRAG-Bench:
+https://github.com/onyx-dot-app/EnterpriseRAG-Bench
+The upstream repository carries the MIT license, Copyright (c) 2026 DanswerAI, Inc.
+Retain upstream attribution when redistributing any upstream material.
+This Agent is not an official Onyx / DanswerAI product and is not endorsed by them.
+
+The nine short documents in src/enterprise_agent/demo/corpus.json are original
+synthetic teaching examples created for this Agent, not actual customer records.
+The large parent-workspace benchmark corpus is not included in release archives.
+Existing eval/*.jsonl references benchmark document IDs; obtain the upstream
+dataset separately and check its current distribution terms before use.
+
+Third-party libraries and separately downloaded model weights keep their own
+licenses. The MIT project license does not relicense those dependencies or
+grant permission to redistribute private enterprise data.
