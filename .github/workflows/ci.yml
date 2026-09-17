@@ -28,7 +28,7 @@ jobs:
       - run: uv build
       - run: uv run python scripts/verify_wheel.py dist
       - run: uv run python scripts/verify_release.py --output artifacts/enterprise-agent-source.zip
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         with:
           name: release-check-${{ matrix.os }}
           path: |
@@ -82,7 +82,7 @@ jobs:
       - run: npm run test:browser
         env:
           EA_PYTHON: .venv/bin/python
-      - uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v7
         if: always()
         with:
           name: browser-screenshots
