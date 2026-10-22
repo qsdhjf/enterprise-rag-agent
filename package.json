@@ -4,5 +4,5 @@
   "version": "0.5.0",
   "description": "Optional browser QA only; the application itself has no Node build",
   "scripts": {"test:browser": "node scripts/browser_smoke.cjs && node scripts/knowledge_browser_smoke.cjs && node scripts/agent_browser_smoke.cjs"},
-  "devDependencies": {"playwright": "1.62.1"}
+  "devDependencies": {"playwright": "1.64.1"}
 }
